@@ -1,110 +1,114 @@
 # rate-guard
 
-A lightweight, flexible, and thread-safe rate limiter library for Rust.
+A lightweight, thread-safe rate limiting library for Rust with support for multiple algorithms.
 
 ## Features
 
 - **Multiple algorithms**: Token Bucket, Fixed Window, Sliding Window
-- **Async & Sync support**: Works seamlessly with async runtimes like Tokio
-- **Thread-safe**: Built with `Arc` and `Mutex` for concurrent environments
-- **Easy to use**: Simple API for quick integration
-- **Zero-cost abstractions**: Minimal overhead
+- **Thread-safe**: Built with atomic operations and efficient locking
+- **Async support**: Works with Tokio and other async runtimes
+- **Zero dependencies** (except optional async support)
+- **Simple API**: Easy integration into existing projects
 
 ## Installation
 
-Add this to your `Cargo.toml`:
+Add to `Cargo.toml`:
+
 ```toml
 [dependencies]
 rate-guard = "0.1.0"
 
+# For async support
+rate-guard = { version = "0.1.0", features = ["async"] }
+```
+
 ## Quick Start
 
-### Token Bucket Example
+### Token Bucket
 
-rust
+```rust
 use rate_guard::TokenBucket;
 use std::time::Duration;
 
 fn main() {
-// Create a rate limiter: 10 requests per second
-let limiter = TokenBucket::new(10, Duration::from_secs(1));
+    let limiter = TokenBucket::new(10, Duration::from_secs(1));
+    
+    if limiter.try_acquire() {
+        println!("Request allowed");
+    } else {
+        println!("Rate limit exceeded");
+    }
+}
+```
+
+### Fixed Window
+
+```rust
+use rate_guard::FixedWindow;
+use std::time::Duration;
+
+let limiter = FixedWindow::new(100, Duration::from_secs(60));
 
 if limiter.try_acquire() {
-println!("Request allowed!");
-} else {
-println!("Rate limit exceeded!");
+    // Process request
 }
+```
+
+### Sliding Window
+
+```rust
+use rate_guard::SlidingWindow;
+use std::time::Duration;
+
+let limiter = SlidingWindow::new(50, Duration::from_secs(30));
+
+if limiter.try_acquire() {
+    // Handle request
 }
+```
 
-### Async Example with Tokio
+### Async Usage
 
-rust
+```rust
 use rate_guard::TokenBucket;
 use std::time::Duration;
 
 #[tokio::main]
 async fn main() {
-let limiter = TokenBucket::new(5, Duration::from_secs(1));
-
-for i in 0..10 {
-if limiter.try_acquire() {
-println!("Request {} allowed", i);
-} else {
-println!("Request {} blocked", i);
+    let limiter = TokenBucket::new(5, Duration::from_secs(1));
+    
+    for i in 0..10 {
+        if limiter.try_acquire() {
+            println!("Request {} processed", i);
+        }
+        tokio::time::sleep(Duration::from_millis(250)).await;
+    }
 }
-tokio::time::sleep(Duration::from_millis(200)).await;
-}
-}
+```
 
 ## Algorithms
 
-### 1. Token Bucket
-Allows bursts while maintaining average rate.
+### Token Bucket
+Allows burst traffic while maintaining average rate. Tokens refill continuously.
 
-rust
-let limiter = TokenBucket::new(capacity, refill_period);
+### Fixed Window
+Counts requests in fixed time windows. Simple but can allow bursts at window boundaries.
 
-### 2. Fixed Window
-Simple counter reset at fixed intervals.
-
-rust
-let limiter = FixedWindow::new(max_requests, window_duration);
-
-### 3. Sliding Window
-More accurate than fixed window, prevents burst at boundaries.
-
-rust
-let limiter = SlidingWindow::new(max_requests, window_duration);
-
-## API Reference
-
-### `TokenBucket::new(capacity: u32, refill_period: Duration)`
-Creates a new token bucket rate limiter.
-
-### `try_acquire() -> bool`
-Attempts to acquire a token. Returns `true` if allowed, `false` if rate limit exceeded.
-
-### `acquire_blocking()`
-Blocks until a token is available (sync only).
-
-### `acquire().await`
-Waits asynchronously until a token is available (async only).
+### Sliding Window
+Tracks individual request timestamps. More accurate than fixed window but slightly higher memory overhead.
 
 ## Use Cases
 
-- **API rate limiting**: Protect your endpoints from abuse
-- **Network request throttling**: Control outbound API calls
-- **Resource management**: Limit access to shared resources
-- **Backpressure handling**: Smooth traffic spikes
+- API rate limiting
+- Request throttling
+- Resource access control
+- Traffic shaping
+- Backpressure management
 
-## Contributing
+## Performance
 
-Contributions are welcome! Please open an issue or submit a pull request.
+All algorithms are designed for high-performance concurrent access with minimal contention.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
-
----
-
-**Made with ❤️ in Rust**
+MIT
