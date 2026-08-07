@@ -7,7 +7,7 @@ A lightweight, thread-safe rate limiting library for Rust with support for multi
 - **Multiple algorithms**: Token Bucket, Fixed Window, Sliding Window
 - **Thread-safe**: Built with atomic operations and efficient locking
 - **Async support**: Works with Tokio and other async runtimes
-- **Zero dependencies** (except optional async support)
+- **Minimal dependencies**: relies on the small, fast `parking_lot` for locking (plus optional async support)
 - **Simple API**: Easy integration into existing projects
 
 ## Installation
@@ -64,6 +64,26 @@ let limiter = SlidingWindow::new(50, Duration::from_secs(30));
 
 if limiter.try_acquire() {
     // Handle request
+}
+```
+
+### Validated Construction & Errors
+
+Each limiter also offers a fallible `try_new` constructor that rejects invalid
+configuration (zero capacity, limit, or window) instead of silently clamping:
+
+```rust
+use rate_guard::{FixedWindow, RateLimitError};
+use std::time::Duration;
+
+match FixedWindow::try_new(100, Duration::from_secs(60)) {
+    Ok(limiter) => {
+        if limiter.try_acquire() {
+            // Process request
+        }
+    }
+    Err(RateLimitError::ZeroWindow) => unreachable!(),
+    Err(_) => println!("invalid configuration"),
 }
 ```
 

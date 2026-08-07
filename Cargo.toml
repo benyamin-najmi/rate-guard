@@ -1,0 +1,34 @@
+[package]
+name = "rate-guard"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Lightweight thread-safe rate limiter"
+repository = "https://github.com/benyamin-najmi/rate-guard"
+keywords = ["rate-limit", "throttle", "concurrency"]
+categories = ["concurrency"]
+readme = "README.md"
+
+[dependencies]
+parking_lot = "0.12"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"], optional = true }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+
+[features]
+default = []
+async = ["dep:tokio"]
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"
+
+[[example]]
+name = "async_example"
+path = "examples/async_example.rs"
+required-features = ["async"]
+
+[[example]]
+name = "concurrent"
+path = "examples/concurrent.rs"
